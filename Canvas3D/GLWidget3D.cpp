@@ -484,7 +484,10 @@ void GLWidget3D::mousePressEvent(QMouseEvent *e) {
 			}
 		}
 		else if (mode == MODE_POLYGON) {
-			if (!current_shape) {
+			if (current_shape) {
+				current_shape->addPoint(current_shape->localCoordinate(screenToWorldCoordinates(e->x(), e->y())));
+			}
+			else {
 				// start drawing a rectangle
 				current_shape = boost::shared_ptr<canvas::Shape>(new canvas::Polygon(canvas::Shape::TYPE_BODY, screenToWorldCoordinates(e->x(), e->y())));
 				current_shape->startDrawing();
@@ -557,7 +560,12 @@ void GLWidget3D::mouseDoubleClickEvent(QMouseEvent* e) {
 					glutils::drawCylinderZ(current_shape->boundingBox().width() * 0.5, current_shape->boundingBox().height() * 0.5, current_shape->boundingBox().width() * 0.5, current_shape->boundingBox().height() * 0.5, 10, glm::vec4(0.7, 1, 0.7, 1), glm::translate(glm::mat4(), glm::vec3(center, -10)), vertices, 48);
 				}
 				else if (mode == MODE_POLYGON) {
-
+					std::vector<glm::dvec2> points = current_shape->getPoints();
+					std::vector<glm::vec2> pts(points.size());
+					for (int i = 0; i < pts.size(); i++) {
+						pts[pts.size() - 1 - i] = glm::vec2(points[i].x, points[i].y);
+					}
+					glutils::drawPrism(pts, 10, glm::vec4(0.7, 1, 0.7, 1), glm::translate(glm::mat4(), glm::vec3(0, 0, -10)), vertices);
 				}
 				renderManager.addObject("test", "", vertices, true);
 
@@ -565,8 +573,9 @@ void GLWidget3D::mouseDoubleClickEvent(QMouseEvent* e) {
 
 				//current_shape->select();
 				shapes.push_back(current_shape->clone());
-				mode = MODE_SELECT;
 				current_shape.reset();
+				mode = MODE_SELECT;
+				mainWin->ui.actionSelect->setChecked(true);
 			}
 		}
 	}

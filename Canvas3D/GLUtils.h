@@ -79,6 +79,7 @@ namespace glutils {
 	void drawCylinderX(float radius1, float radius2, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices, int slices = 12);
 	void drawCylinderY(float radius1, float radius2, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices, int slices = 12);
 	void drawCylinderZ(float radius1, float radius2, float radius3, float radius4, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices, int slices = 12, bool top_face = true, bool bottom_face = true);
+	void drawPrism(const std::vector<glm::vec2>& points, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices);
 	void drawArrow(float radius, float length, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices);
 	void drawAxes(float radius, float length, const glm::mat4& mat, std::vector<Vertex>& vertices);
 	void drawTube(std::vector<glm::vec3>& points, float radius, const glm::vec4& color, std::vector<Vertex>& vertices, int slices = 12);

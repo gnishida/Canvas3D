@@ -989,6 +989,41 @@ void drawCylinderZ(float radius1, float radius2, float radius3, float radius4, f
 	}
 }
 
+void drawPrism(const std::vector<glm::vec2>& points, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices) {
+	// top face
+	drawPolygon(points, color, glm::translate(mat, glm::vec3(0, 0, h)), vertices);
+
+	// bottom face
+	std::vector<glm::vec2> reversed_points = points;
+	std::reverse(reversed_points.begin(), reversed_points.end());
+	drawPolygon(reversed_points, color, mat, vertices);
+
+	// side faces
+	for (int i = 0; i < points.size(); i++) {
+		int next = (i + 1) % points.size();
+		glm::vec3 p1(points[i], 0);
+		glm::vec3 p2(points[next], 0);
+		glm::vec3 p3(points[next], h);
+		glm::vec3 p4(points[i], h);
+
+		p1 = glm::vec3(mat * glm::vec4(p1, 1));
+		p2 = glm::vec3(mat * glm::vec4(p2, 1));
+		p3 = glm::vec3(mat * glm::vec4(p3, 1));
+		p4 = glm::vec3(mat * glm::vec4(p4, 1));
+
+		glm::vec3 n = glm::cross(p2 - p1, p3 - p2);
+		n /= glm::length(n);
+
+		vertices.push_back(Vertex(p1, n, color));
+		vertices.push_back(Vertex(p2, n, color, 1));
+		vertices.push_back(Vertex(p3, n, color));
+
+		vertices.push_back(Vertex(p1, n, color));
+		vertices.push_back(Vertex(p3, n, color));
+		vertices.push_back(Vertex(p4, n, color, 1));
+	}
+}
+
 /**
  * Z軸方向に、指定された長さ、色、半径の矢印を描画する。
  */

@@ -8,7 +8,7 @@
 class MainWindow : public QMainWindow {
 	Q_OBJECT
 
-private:
+public:
 	Ui::MainWindowClass ui;
 	GLWidget3D* glWidget;
 
