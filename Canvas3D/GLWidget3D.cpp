@@ -295,15 +295,11 @@ glm::dvec2 GLWidget3D::screenToWorldCoordinates(const glm::dvec2& p) {
 }
 
 glm::dvec2 GLWidget3D::screenToWorldCoordinates(double x, double y) {
-	//std::cout << "x: " << x << ", y: " << y << ", F: " << camera.f() << ", Z: " << camera.pos.z << ", W: " << width() << ", H: " << height() << std::endl;
-	return glm::dvec2((x - width() * 0.5) / width() * 2 / camera.f() * camera.pos.z, -(y - height() * 0.5) / height() * 2 / camera.f() * camera.pos.z);
+	glm::vec2 offset = glm::vec2(camera.pos.x, -camera.pos.y) / camera.pos.z * camera.f() * (float)height() * 0.5f;
+	return glm::dvec2((x - width() * 0.5 + offset.x) / width() * 2 / camera.f() * camera.pos.z, -(y - height() * 0.5 + offset.y) / height() * 2 / camera.f() * camera.pos.z);
 }
 
 glm::dvec2 GLWidget3D::worldToScreenCoordinates(const glm::dvec2& p) {
-	glm::vec4 a = camera.mvpMatrix * glm::vec4(p, 0, 1);
-	std::cout << "camera: " << a.x / a.w << "," << a.y / a.w << std::endl;
-	std::cout << "    my:" << p.x * camera.f() / camera.pos.z * height() / width() << "," << p.y * camera.f() / camera.pos.z << std::endl;
-
 	return glm::dvec2(width() * 0.5 + p.x * camera.f() / camera.pos.z * width() * 0.5, height() * 0.5 - p.y * camera.f() / camera.pos.z * height() * 0.5);
 }
 
@@ -440,11 +436,12 @@ void GLWidget3D::paintEvent(QPaintEvent *event) {
 		}
 		painter.restore();
 
+		glm::vec2 offset = glm::vec2(camera.pos.x, -camera.pos.y) / camera.pos.z * camera.f() * (float)height() * 0.5f;
 		for (int i = 0; i < shapes.size(); i++) {
-			shapes[i]->draw(painter, QPointF(width() * 0.5, height() * 0.5), camera.f() / camera.pos.z * height() * 0.5);
+			shapes[i]->draw(painter, QPointF(width() * 0.5 - offset.x, height() * 0.5 - offset.y), camera.f() / camera.pos.z * height() * 0.5);
 		}
 		if (current_shape) {
-			current_shape->draw(painter, QPointF(width() * 0.5, height() * 0.5), camera.f() / camera.pos.z * height() * 0.5);
+			current_shape->draw(painter, QPointF(width() * 0.5 - offset.x, height() * 0.5 - offset.y), camera.f() / camera.pos.z * height() * 0.5);
 		}
 	}
 	painter.end();
@@ -481,7 +478,12 @@ void GLWidget3D::mouseMoveEvent(QMouseEvent *e) {
 		current_shape->updateByNewPoint(current_shape->localCoordinate(screenToWorldCoordinates(e->x(), e->y())), shiftPressed);
 	}
 	else if (e->buttons() & Qt::RightButton) {
-		camera.rotate(e->x(), e->y(), (ctrlPressed ? 0.1 : 1));
+		if (shiftPressed) {
+			camera.move(e->x(), e->y());
+		}
+		else {
+			camera.rotate(e->x(), e->y(), (ctrlPressed ? 0.1 : 1));
+		}
 	}
 
 	update();

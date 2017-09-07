@@ -35,8 +35,6 @@ public:
 	bool first_paint;
 
 	QPointF mouse_prev_pt;
-	//QPointF origin;
-	//double scale;
 	boost::shared_ptr<canvas::Shape> current_shape;
 	std::vector<boost::shared_ptr<canvas::Shape>> shapes;
 
