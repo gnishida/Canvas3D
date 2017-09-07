@@ -9,13 +9,15 @@
 #include <QTextStream>
 #include <iostream>
 #include <QProcess>
+#include "Rectangle.h"
 
 GLWidget3D::GLWidget3D(MainWindow *parent) : QGLWidget(QGLFormat(QGL::SampleBuffers)) {
 	this->mainWin = parent;
 	ctrlPressed = false;
 	shiftPressed = false;
 
-	data_loaded = false;
+	first_paint = true;
+	current_shape.reset();
 
 	// This is necessary to prevent the screen overdrawn by OpenGL
 	setAutoFillBackground(false);
@@ -288,6 +290,23 @@ void GLWidget3D::render() {
 	glActiveTexture(GL_TEXTURE0);
 }
 
+glm::dvec2 GLWidget3D::screenToWorldCoordinates(const glm::dvec2& p) {
+	return screenToWorldCoordinates(p.x, p.y);
+}
+
+glm::dvec2 GLWidget3D::screenToWorldCoordinates(double x, double y) {
+	//std::cout << "x: " << x << ", y: " << y << ", F: " << camera.f() << ", Z: " << camera.pos.z << ", W: " << width() << ", H: " << height() << std::endl;
+	return glm::dvec2((x - width() * 0.5) / width() * 2 / camera.f() * camera.pos.z, -(y - height() * 0.5) / height() * 2 / camera.f() * camera.pos.z);
+}
+
+glm::dvec2 GLWidget3D::worldToScreenCoordinates(const glm::dvec2& p) {
+	glm::vec4 a = camera.mvpMatrix * glm::vec4(p, 0, 1);
+	std::cout << "camera: " << a.x / a.w << "," << a.y / a.w << std::endl;
+	std::cout << "    my:" << p.x * camera.f() / camera.pos.z * height() / width() << "," << p.y * camera.f() / camera.pos.z << std::endl;
+
+	return glm::dvec2(width() * 0.5 + p.x * camera.f() / camera.pos.z * width() * 0.5, height() * 0.5 - p.y * camera.f() / camera.pos.z * height() * 0.5);
+}
+
 void GLWidget3D::keyPressEvent(QKeyEvent *e) {
 	ctrlPressed = false;
 	shiftPressed = false;
@@ -380,18 +399,12 @@ void GLWidget3D::resizeGL(int width, int height) {
 * This function is called whenever the widget needs to be painted.
 */
 void GLWidget3D::paintEvent(QPaintEvent *event) {
-	if (!data_loaded) {
-		data_loaded = true;
-
+	if (first_paint) {
 		std::vector<Vertex> vertices;
-		glutils::drawBox(20, 10, 20, glm::vec4(0.7, 0.8, 1, 1), glm::mat4(), vertices);
-		renderManager.addObject("test", "", vertices, true);
-
-		vertices.clear();
-		glutils::drawQuad(40, 40, glm::vec4(1, 1, 1, 1), glm::translate(glm::rotate(glm::mat4(), -(float)glutils::M_PI * 0.5f, glm::vec3(1, 0, 0)), glm::vec3(0, 0, -5.01)), vertices);
-		renderManager.addObject("test", "", vertices, true);
-
+		glutils::drawQuad(0.001, 0.001, glm::vec4(1, 1, 1, 1), glm::mat4(), vertices);
+		renderManager.addObject("dummy", "", vertices, true);
 		renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
+		first_paint = false;
 	}
 
 	// OpenGLで描画
@@ -427,11 +440,12 @@ void GLWidget3D::paintEvent(QPaintEvent *event) {
 		}
 		painter.restore();
 
-		/*
-		for (int i = 0; i < lines.size(); i++) {
-			painter.drawLine(lines[i].first.x, lines[i].first.y, lines[i].second.x, lines[i].second.y);
+		for (int i = 0; i < shapes.size(); i++) {
+			shapes[i]->draw(painter, QPointF(width() * 0.5, height() * 0.5), camera.f() / camera.pos.z * height() * 0.5);
 		}
-		*/
+		if (current_shape) {
+			current_shape->draw(painter, QPointF(width() * 0.5, height() * 0.5), camera.f() / camera.pos.z * height() * 0.5);
+		}
 	}
 	painter.end();
 
@@ -442,8 +456,16 @@ void GLWidget3D::paintEvent(QPaintEvent *event) {
 * This event handler is called when the mouse press events occur.
 */
 void GLWidget3D::mousePressEvent(QMouseEvent *e) {
+	// This is necessary to get key event occured even after the user selects a menu.
+	setFocus();
+
 	if (e->buttons() & Qt::LeftButton) {
-		mouse_prev_pt = e->pos();
+		if (!current_shape) {
+			// start drawing a rectangle
+			current_shape = boost::shared_ptr<canvas::Shape>(new canvas::Rectangle(canvas::Shape::TYPE_BODY, screenToWorldCoordinates(e->x(), e->y())));
+			current_shape->startDrawing();
+			setMouseTracking(true);
+		}
 	}
 	else if (e->buttons() & Qt::RightButton) {
 		camera.mousePress(e->x(), e->y());
@@ -455,8 +477,8 @@ void GLWidget3D::mousePressEvent(QMouseEvent *e) {
 */
 
 void GLWidget3D::mouseMoveEvent(QMouseEvent *e) {
-	if (e->buttons() & Qt::LeftButton) {
-		//current_shape->updateByNewPoint(current_shape->localCoordinate(screenToWorldCoordinates(e->x(), e->y())), shiftPressed);
+	if (current_shape) {
+		current_shape->updateByNewPoint(current_shape->localCoordinate(screenToWorldCoordinates(e->x(), e->y())), shiftPressed);
 	}
 	else if (e->buttons() & Qt::RightButton) {
 		camera.rotate(e->x(), e->y(), (ctrlPressed ? 0.1 : 1));
@@ -476,6 +498,34 @@ void GLWidget3D::mouseReleaseEvent(QMouseEvent *e) {
 			camera.updateMVPMatrix();
 		}
 	}
+
+	update();
+}
+
+void GLWidget3D::mouseDoubleClickEvent(QMouseEvent* e) {
+	if (e->button() == Qt::LeftButton) {
+		if (current_shape) {
+			// The shape is created.
+			current_shape->completeDrawing();
+
+			// create 3D geometry
+			std::vector<Vertex> vertices;
+			canvas::BoundingBox bbox = current_shape->boundingBox();
+			glm::vec2 center = current_shape->boundingBox().center();
+			center = current_shape->worldCoordinate(center);
+
+			glutils::drawBox(current_shape->boundingBox().width(), current_shape->boundingBox().height(), 10, glm::vec4(0.8, 1, 0.8, 1), glm::translate(glm::mat4(), glm::vec3(center, -5)), vertices);
+			renderManager.addObject("test", "", vertices, true);
+
+			renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
+
+			//current_shape->select();
+			shapes.push_back(current_shape->clone());
+			current_shape.reset();
+		}
+	}
+
+	setMouseTracking(false);
 
 	update();
 }

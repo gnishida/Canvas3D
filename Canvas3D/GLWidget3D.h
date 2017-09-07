@@ -12,7 +12,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-//#include "Shape.h"
+#include "Shape.h"
 
 class MainWindow;
 
@@ -32,18 +32,22 @@ public:
 	bool shiftPressed;
 	bool ctrlPressed;
 
-	bool data_loaded;
+	bool first_paint;
 
 	QPointF mouse_prev_pt;
-
-	//boost::shared_ptr<canvas::Shape> current_shape;
-	//std::vector<boost::shared_ptr<canvas::Shape>> shapes;
+	//QPointF origin;
+	//double scale;
+	boost::shared_ptr<canvas::Shape> current_shape;
+	std::vector<boost::shared_ptr<canvas::Shape>> shapes;
 
 public:
 	GLWidget3D(MainWindow *parent = 0);
 
 	void drawScene();
 	void render();
+	glm::dvec2 screenToWorldCoordinates(const glm::dvec2& p);
+	glm::dvec2 screenToWorldCoordinates(double x, double y);
+	glm::dvec2 worldToScreenCoordinates(const glm::dvec2& p);
 
 	void keyPressEvent(QKeyEvent* e);
 	void keyReleaseEvent(QKeyEvent* e);
@@ -55,6 +59,7 @@ protected:
 	void mousePressEvent(QMouseEvent *e);
 	void mouseMoveEvent(QMouseEvent *e);
 	void mouseReleaseEvent(QMouseEvent *e);
+	void mouseDoubleClickEvent(QMouseEvent* e);
 	void wheelEvent(QWheelEvent* e);
 
 };

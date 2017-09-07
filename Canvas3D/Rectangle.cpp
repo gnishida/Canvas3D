@@ -1,6 +1,4 @@
 #include "Rectangle.h"
-#include "Point.h"
-#include <kinematics.h>
 
 namespace canvas {
 
@@ -41,7 +39,8 @@ namespace canvas {
 	}
 
 	boost::shared_ptr<Shape> Rectangle::clone() const {
-		return boost::shared_ptr<Shape>(new Rectangle(*this));
+		Rectangle* new_rec = new Rectangle(*this);
+		return boost::shared_ptr<Shape>(new_rec);
 	}
 
 	void Rectangle::draw(QPainter& painter, const QPointF& origin, double scale) const {
