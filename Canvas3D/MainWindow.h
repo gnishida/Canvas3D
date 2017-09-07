@@ -19,6 +19,9 @@ public:
 protected:
 	void keyPressEvent(QKeyEvent* e);
 	void keyReleaseEvent(QKeyEvent* e);
+
+public slots:
+	void onModeChanged();
 };
 
 #endif // MAINWINDOW_H

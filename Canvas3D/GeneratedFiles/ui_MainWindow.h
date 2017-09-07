@@ -27,9 +27,14 @@ class Ui_MainWindowClass
 {
 public:
     QAction *actionExit;
+    QAction *actionSelect;
+    QAction *actionRectangle;
+    QAction *actionCircle;
+    QAction *actionPolygon;
     QWidget *centralWidget;
     QMenuBar *menuBar;
     QMenu *menuFile;
+    QMenu *menuMode;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
 
@@ -40,6 +45,18 @@ public:
         MainWindowClass->resize(800, 853);
         actionExit = new QAction(MainWindowClass);
         actionExit->setObjectName(QStringLiteral("actionExit"));
+        actionSelect = new QAction(MainWindowClass);
+        actionSelect->setObjectName(QStringLiteral("actionSelect"));
+        actionSelect->setCheckable(true);
+        actionRectangle = new QAction(MainWindowClass);
+        actionRectangle->setObjectName(QStringLiteral("actionRectangle"));
+        actionRectangle->setCheckable(true);
+        actionCircle = new QAction(MainWindowClass);
+        actionCircle->setObjectName(QStringLiteral("actionCircle"));
+        actionCircle->setCheckable(true);
+        actionPolygon = new QAction(MainWindowClass);
+        actionPolygon->setObjectName(QStringLiteral("actionPolygon"));
+        actionPolygon->setCheckable(true);
         centralWidget = new QWidget(MainWindowClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         MainWindowClass->setCentralWidget(centralWidget);
@@ -48,6 +65,8 @@ public:
         menuBar->setGeometry(QRect(0, 0, 800, 21));
         menuFile = new QMenu(menuBar);
         menuFile->setObjectName(QStringLiteral("menuFile"));
+        menuMode = new QMenu(menuBar);
+        menuMode->setObjectName(QStringLiteral("menuMode"));
         MainWindowClass->setMenuBar(menuBar);
         mainToolBar = new QToolBar(MainWindowClass);
         mainToolBar->setObjectName(QStringLiteral("mainToolBar"));
@@ -57,7 +76,12 @@ public:
         MainWindowClass->setStatusBar(statusBar);
 
         menuBar->addAction(menuFile->menuAction());
+        menuBar->addAction(menuMode->menuAction());
         menuFile->addAction(actionExit);
+        menuMode->addAction(actionSelect);
+        menuMode->addAction(actionRectangle);
+        menuMode->addAction(actionCircle);
+        menuMode->addAction(actionPolygon);
 
         retranslateUi(MainWindowClass);
 
@@ -68,7 +92,12 @@ public:
     {
         MainWindowClass->setWindowTitle(QApplication::translate("MainWindowClass", "Canvas 3D", 0));
         actionExit->setText(QApplication::translate("MainWindowClass", "Exit", 0));
+        actionSelect->setText(QApplication::translate("MainWindowClass", "Select", 0));
+        actionRectangle->setText(QApplication::translate("MainWindowClass", "Rectangle", 0));
+        actionCircle->setText(QApplication::translate("MainWindowClass", "Circle", 0));
+        actionPolygon->setText(QApplication::translate("MainWindowClass", "Polygon", 0));
         menuFile->setTitle(QApplication::translate("MainWindowClass", "File", 0));
+        menuMode->setTitle(QApplication::translate("MainWindowClass", "Mode", 0));
     } // retranslateUi
 
 };

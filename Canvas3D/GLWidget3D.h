@@ -18,7 +18,12 @@ class MainWindow;
 
 class GLWidget3D : public QGLWidget {
 public:
+	static enum { MODE_SELECT = 0, MODE_MOVE, MODE_ROTATION, MODE_RESIZE, MODE_RECTANGLE, MODE_CIRCLE, MODE_POLYGON };
+
+public:
 	MainWindow* mainWin;
+
+	int mode;
 
 	// camera
 	Camera camera;
@@ -43,6 +48,7 @@ public:
 
 	void drawScene();
 	void render();
+	void setMode(int mode);
 	glm::dvec2 screenToWorldCoordinates(const glm::dvec2& p);
 	glm::dvec2 screenToWorldCoordinates(double x, double y);
 	glm::dvec2 worldToScreenCoordinates(const glm::dvec2& p);

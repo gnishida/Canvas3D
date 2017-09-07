@@ -950,7 +950,7 @@ void drawCylinderY(float radius1, float radius2, float h, const glm::vec4& color
 /**
  * Z軸方向に高さ h、底面の半径 r1/r2、上面の半径 r3/r4の円錐を描画する。
  */
-void drawCylinderZ(float radius1, float radius2, float radius3, float radius4, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices, int slices) {
+void drawCylinderZ(float radius1, float radius2, float radius3, float radius4, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices, int slices, bool top_face, bool bottom_face) {
 	float phi = atan2(radius1 - radius2, h);
 
 	for (int i = 0; i < slices; ++i) {
@@ -978,6 +978,14 @@ void drawCylinderZ(float radius1, float radius2, float radius3, float radius4, f
 		vertices.push_back(Vertex(glm::vec3(p1), glm::vec3(n1), color));
 		vertices.push_back(Vertex(glm::vec3(p3), glm::vec3(n2), color));
 		vertices.push_back(Vertex(glm::vec3(p4), glm::vec3(n1), color, 1));
+	}
+
+	if (top_face) {
+		drawCircle(radius3, radius4, color, glm::translate(mat, glm::vec3(0, 0, h)), vertices, slices);
+	}
+
+	if (bottom_face) {
+		drawCircle(radius3, radius4, color, glm::rotate(mat, (float)M_PI, glm::vec3(1, 0, 0)), vertices, slices);
 	}
 }
 

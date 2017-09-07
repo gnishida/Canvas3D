@@ -10,6 +10,8 @@
 #include <iostream>
 #include <QProcess>
 #include "Rectangle.h"
+#include "Circle.h"
+#include "Polygon.h"
 
 GLWidget3D::GLWidget3D(MainWindow *parent) : QGLWidget(QGLFormat(QGL::SampleBuffers)) {
 	this->mainWin = parent;
@@ -290,6 +292,14 @@ void GLWidget3D::render() {
 	glActiveTexture(GL_TEXTURE0);
 }
 
+void GLWidget3D::setMode(int mode) {
+	if (this->mode != mode) {
+		this->mode = mode;
+
+		update();
+	}
+}
+
 glm::dvec2 GLWidget3D::screenToWorldCoordinates(const glm::dvec2& p) {
 	return screenToWorldCoordinates(p.x, p.y);
 }
@@ -457,11 +467,29 @@ void GLWidget3D::mousePressEvent(QMouseEvent *e) {
 	setFocus();
 
 	if (e->buttons() & Qt::LeftButton) {
-		if (!current_shape) {
-			// start drawing a rectangle
-			current_shape = boost::shared_ptr<canvas::Shape>(new canvas::Rectangle(canvas::Shape::TYPE_BODY, screenToWorldCoordinates(e->x(), e->y())));
-			current_shape->startDrawing();
-			setMouseTracking(true);
+		if (mode == MODE_RECTANGLE) {
+			if (!current_shape) {
+				// start drawing a rectangle
+				current_shape = boost::shared_ptr<canvas::Shape>(new canvas::Rectangle(canvas::Shape::TYPE_BODY, screenToWorldCoordinates(e->x(), e->y())));
+				current_shape->startDrawing();
+				setMouseTracking(true);
+			}
+		}
+		else if (mode == MODE_CIRCLE) {
+			if (!current_shape) {
+				// start drawing a rectangle
+				current_shape = boost::shared_ptr<canvas::Shape>(new canvas::Circle(canvas::Shape::TYPE_BODY, screenToWorldCoordinates(e->x(), e->y())));
+				current_shape->startDrawing();
+				setMouseTracking(true);
+			}
+		}
+		else if (mode == MODE_POLYGON) {
+			if (!current_shape) {
+				// start drawing a rectangle
+				current_shape = boost::shared_ptr<canvas::Shape>(new canvas::Polygon(canvas::Shape::TYPE_BODY, screenToWorldCoordinates(e->x(), e->y())));
+				current_shape->startDrawing();
+				setMouseTracking(true);
+			}
 		}
 	}
 	else if (e->buttons() & Qt::RightButton) {
@@ -474,8 +502,10 @@ void GLWidget3D::mousePressEvent(QMouseEvent *e) {
 */
 
 void GLWidget3D::mouseMoveEvent(QMouseEvent *e) {
-	if (current_shape) {
-		current_shape->updateByNewPoint(current_shape->localCoordinate(screenToWorldCoordinates(e->x(), e->y())), shiftPressed);
+	if (mode == MODE_RECTANGLE || mode == MODE_CIRCLE || mode == MODE_POLYGON) {
+		if (current_shape) {
+			current_shape->updateByNewPoint(current_shape->localCoordinate(screenToWorldCoordinates(e->x(), e->y())), shiftPressed);
+		}
 	}
 	else if (e->buttons() & Qt::RightButton) {
 		if (shiftPressed) {
@@ -493,7 +523,10 @@ void GLWidget3D::mouseMoveEvent(QMouseEvent *e) {
 * This event handler is called when the mouse release events occur.
 */
 void GLWidget3D::mouseReleaseEvent(QMouseEvent *e) {
-	if (e->button() == Qt::RightButton) {
+	if (mode == MODE_MOVE || mode == MODE_ROTATION || mode == MODE_RESIZE) {
+		mode = MODE_SELECT;
+	}
+	else if (e->button() == Qt::RightButton) {
 		if (abs(camera.xrot) < 20 && abs(camera.yrot) < 20) {
 			camera.xrot = 0;
 			camera.yrot = 0;
@@ -505,25 +538,36 @@ void GLWidget3D::mouseReleaseEvent(QMouseEvent *e) {
 }
 
 void GLWidget3D::mouseDoubleClickEvent(QMouseEvent* e) {
-	if (e->button() == Qt::LeftButton) {
-		if (current_shape) {
-			// The shape is created.
-			current_shape->completeDrawing();
+	if (mode == MODE_RECTANGLE || mode == MODE_CIRCLE || mode == MODE_POLYGON) {
+		if (e->button() == Qt::LeftButton) {
+			if (current_shape) {
+				// The shape is created.
+				current_shape->completeDrawing();
 
-			// create 3D geometry
-			std::vector<Vertex> vertices;
-			canvas::BoundingBox bbox = current_shape->boundingBox();
-			glm::vec2 center = current_shape->boundingBox().center();
-			center = current_shape->worldCoordinate(center);
+				// create 3D geometry
+				std::vector<Vertex> vertices;
+				canvas::BoundingBox bbox = current_shape->boundingBox();
+				glm::vec2 center = current_shape->boundingBox().center();
+				center = current_shape->worldCoordinate(center);
 
-			glutils::drawBox(current_shape->boundingBox().width(), current_shape->boundingBox().height(), 10, glm::vec4(0.8, 1, 0.8, 1), glm::translate(glm::mat4(), glm::vec3(center, -5)), vertices);
-			renderManager.addObject("test", "", vertices, true);
+				if (mode == MODE_RECTANGLE) {
+					glutils::drawBox(current_shape->boundingBox().width(), current_shape->boundingBox().height(), 10, glm::vec4(0.7, 1, 0.7, 1), glm::translate(glm::mat4(), glm::vec3(center, -5)), vertices);
+				}
+				else if (mode == MODE_CIRCLE) {
+					glutils::drawCylinderZ(current_shape->boundingBox().width() * 0.5, current_shape->boundingBox().height() * 0.5, current_shape->boundingBox().width() * 0.5, current_shape->boundingBox().height() * 0.5, 10, glm::vec4(0.7, 1, 0.7, 1), glm::translate(glm::mat4(), glm::vec3(center, -10)), vertices, 48);
+				}
+				else if (mode == MODE_POLYGON) {
 
-			renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
+				}
+				renderManager.addObject("test", "", vertices, true);
 
-			//current_shape->select();
-			shapes.push_back(current_shape->clone());
-			current_shape.reset();
+				renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
+
+				//current_shape->select();
+				shapes.push_back(current_shape->clone());
+				mode = MODE_SELECT;
+				current_shape.reset();
+			}
 		}
 	}
 
