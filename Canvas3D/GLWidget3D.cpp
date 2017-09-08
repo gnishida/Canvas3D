@@ -492,7 +492,7 @@ void GLWidget3D::paintEvent(QPaintEvent *event) {
 	// draw 2D
 	QPainter painter(this);
 	painter.setOpacity(1.0f);
-	if (front_faced) {
+	if (abs(camera.xrot) < 10 && abs(camera.yrot) < 10) {
 		// draw grid
 		painter.save();
 		painter.setPen(QPen(QColor(224, 224, 224), 1));
