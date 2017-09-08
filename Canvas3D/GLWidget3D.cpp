@@ -19,7 +19,9 @@ GLWidget3D::GLWidget3D(MainWindow *parent) : QGLWidget(QGLFormat(QGL::SampleBuff
 	shiftPressed = false;
 
 	first_paint = true;
+	front_faced = true;
 	current_shape.reset();
+	operation.reset();
 
 	// This is necessary to prevent the screen overdrawn by OpenGL
 	setAutoFillBackground(false);
@@ -292,6 +294,30 @@ void GLWidget3D::render() {
 	glActiveTexture(GL_TEXTURE0);
 }
 
+void GLWidget3D::clear() {
+	selected_shape.reset();
+
+	update();
+}
+
+void GLWidget3D::selectAll() {
+	for (int i = 0; i < shapes.size(); ++i) {
+		shapes[i]->select();
+	}
+
+	mode = MODE_SELECT;
+	update();
+}
+
+void GLWidget3D::unselectAll() {
+	for (int i = 0; i < shapes.size(); ++i) {
+		shapes[i]->unselect();
+	}
+
+	current_shape.reset();
+	update();
+}
+
 void GLWidget3D::setMode(int mode) {
 	if (this->mode != mode) {
 		this->mode = mode;
@@ -305,12 +331,34 @@ glm::dvec2 GLWidget3D::screenToWorldCoordinates(const glm::dvec2& p) {
 }
 
 glm::dvec2 GLWidget3D::screenToWorldCoordinates(double x, double y) {
-	glm::vec2 offset = glm::vec2(camera.pos.x, -camera.pos.y) / camera.pos.z * camera.f() * (float)height() * 0.5f;
-	return glm::dvec2((x - width() * 0.5 + offset.x) / width() * 2 / camera.f() * camera.pos.z, -(y - height() * 0.5 + offset.y) / height() * 2 / camera.f() * camera.pos.z);
+	glm::vec2 offset = glm::vec2(camera.pos.x, -camera.pos.y) * (float)scale();
+	return glm::dvec2((x - width() * 0.5 + offset.x) / width() * 2 / camera.f() * camera.pos.z, -(y - height() * 0.5 + offset.y) / scale());
 }
 
 glm::dvec2 GLWidget3D::worldToScreenCoordinates(const glm::dvec2& p) {
-	return glm::dvec2(width() * 0.5 + p.x * camera.f() / camera.pos.z * width() * 0.5, height() * 0.5 - p.y * camera.f() / camera.pos.z * height() * 0.5);
+	return glm::dvec2(width() * 0.5 + p.x * camera.f() / camera.pos.z * width() * 0.5, height() * 0.5 - p.y * scale());
+}
+
+double GLWidget3D::scale() {
+	return camera.f() / camera.pos.z * height() * 0.5;
+}
+
+std::vector<Vertex> GLWidget3D::generateGeometry(boost::shared_ptr<canvas::Shape> shape) {
+	// create 3D geometry
+	std::vector<Vertex> vertices;
+
+	canvas::BoundingBox bbox = shape->boundingBox();
+	glm::vec2 center = shape->boundingBox().center();
+	center = shape->worldCoordinate(center);
+
+	std::vector<glm::dvec2> points = shape->getPoints();
+	std::vector<glm::vec2> pts(points.size());
+	for (int i = 0; i < pts.size(); i++) {
+		pts[pts.size() - 1 - i] = glm::vec2(points[i].x, points[i].y);
+	}
+	glutils::drawPrism(pts, 10, glm::vec4(0.7, 1, 0.7, 1), glm::translate(glm::mat4(), glm::vec3(0, 0, -10)), vertices);
+
+	return vertices;
 }
 
 void GLWidget3D::keyPressEvent(QKeyEvent *e) {
@@ -436,7 +484,7 @@ void GLWidget3D::paintEvent(QPaintEvent *event) {
 	// draw 2D
 	QPainter painter(this);
 	painter.setOpacity(1.0f);
-	if (abs(camera.xrot) < 10 && abs(camera.yrot) < 10 && abs(camera.zrot) < 10) {
+	if (front_faced) {
 		// draw grid
 		painter.save();
 		painter.setPen(QPen(QColor(224, 224, 224), 1));
@@ -446,12 +494,12 @@ void GLWidget3D::paintEvent(QPaintEvent *event) {
 		}
 		painter.restore();
 
-		glm::vec2 offset = glm::vec2(camera.pos.x, -camera.pos.y) / camera.pos.z * camera.f() * (float)height() * 0.5f;
+		glm::vec2 offset = glm::vec2(camera.pos.x, -camera.pos.y) * (float)scale();
 		for (int i = 0; i < shapes.size(); i++) {
-			shapes[i]->draw(painter, QPointF(width() * 0.5 - offset.x, height() * 0.5 - offset.y), camera.f() / camera.pos.z * height() * 0.5);
+			shapes[i]->draw(painter, QPointF(width() * 0.5 - offset.x, height() * 0.5 - offset.y), scale());
 		}
 		if (current_shape) {
-			current_shape->draw(painter, QPointF(width() * 0.5 - offset.x, height() * 0.5 - offset.y), camera.f() / camera.pos.z * height() * 0.5);
+			current_shape->draw(painter, QPointF(width() * 0.5 - offset.x, height() * 0.5 - offset.y), scale());
 		}
 	}
 	painter.end();
@@ -467,9 +515,116 @@ void GLWidget3D::mousePressEvent(QMouseEvent *e) {
 	setFocus();
 
 	if (e->buttons() & Qt::LeftButton) {
-		if (mode == MODE_RECTANGLE) {
+		if (mode == MODE_SELECT) {
+			// hit test for rotation marker
+			for (int i = 0; i < shapes.size(); ++i) {
+				if (glm::length(shapes[i]->getRotationMarkerPosition(scale()) - shapes[i]->localCoordinate(screenToWorldCoordinates(e->x(), e->y()))) < 10 / scale()) {
+					// start rotating
+					mode = MODE_ROTATION;
+					operation = boost::shared_ptr<canvas::Operation>(new canvas::RotateOperation(screenToWorldCoordinates(e->x(), e->y()), shapes[i]->worldCoordinate(shapes[i]->getCenter())));
+					selected_shape = shapes[i];
+					if (!shapes[i]->isSelected()) {
+						unselectAll();
+						shapes[i]->select();
+					}
+					update();
+					return;
+				}
+			}
+
+			// hit test for resize marker
+			for (int i = 0; i < shapes.size(); ++i) {
+				canvas::BoundingBox bbox = shapes[i]->boundingBox();
+				if (glm::length(bbox.minPt - shapes[i]->localCoordinate(screenToWorldCoordinates(e->x(), e->y()))) < 10 / scale()) {
+					// start resizing
+					mode = MODE_RESIZE;
+					operation = boost::shared_ptr<canvas::Operation>(new canvas::ResizeOperation(screenToWorldCoordinates(e->x(), e->y()), shapes[i]->worldCoordinate(bbox.maxPt)));
+					selected_shape = shapes[i];
+					if (!shapes[i]->isSelected()) {
+						unselectAll();
+						shapes[i]->select();
+					}
+					update();
+					return;
+				}
+
+				if (glm::length(glm::dvec2(bbox.maxPt.x, bbox.minPt.y) - shapes[i]->localCoordinate(screenToWorldCoordinates(e->x(), e->y()))) < 10 / scale()) {
+					// start resizing
+					mode = MODE_RESIZE;
+					operation = boost::shared_ptr<canvas::Operation>(new canvas::ResizeOperation(screenToWorldCoordinates(e->x(), e->y()), shapes[i]->worldCoordinate(glm::dvec2(bbox.minPt.x, bbox.maxPt.y))));
+					selected_shape = shapes[i];
+					if (!shapes[i]->isSelected()) {
+						unselectAll();
+						shapes[i]->select();
+					}
+					update();
+					return;
+				}
+
+				if (glm::length(glm::dvec2(bbox.minPt.x, bbox.maxPt.y) - shapes[i]->localCoordinate(screenToWorldCoordinates(e->x(), e->y()))) < 10 / scale()) {
+					// start resizing
+					mode = MODE_RESIZE;
+					operation = boost::shared_ptr<canvas::Operation>(new canvas::ResizeOperation(screenToWorldCoordinates(e->x(), e->y()), shapes[i]->worldCoordinate(glm::dvec2(bbox.maxPt.x, bbox.minPt.y))));
+					selected_shape = shapes[i];
+					if (!shapes[i]->isSelected()) {
+						unselectAll();
+						shapes[i]->select();
+					}
+					update();
+					return;
+				}
+
+				if (glm::length(bbox.maxPt - shapes[i]->localCoordinate(screenToWorldCoordinates(e->x(), e->y()))) < 10 / scale()) {
+					// start resizing
+					mode = MODE_RESIZE;
+					operation = boost::shared_ptr<canvas::Operation>(new canvas::ResizeOperation(screenToWorldCoordinates(e->x(), e->y()), shapes[i]->worldCoordinate(bbox.minPt)));
+					selected_shape = shapes[i];
+					if (!shapes[i]->isSelected()) {
+						unselectAll();
+						shapes[i]->select();
+					}
+					update();
+					return;
+				}
+			}
+
+			// hit test for the selected shapes first
+			for (int i = 0; i < shapes.size(); ++i) {
+				if (shapes[i]->isSelected()) {
+					if (shapes[i]->hit(screenToWorldCoordinates(e->x(), e->y()))) {
+						// reselecting the already selected shapes
+						mode = MODE_MOVE;
+						operation = boost::shared_ptr<canvas::Operation>(new canvas::MoveOperation(screenToWorldCoordinates(e->x(), e->y())));
+						update();
+						return;
+					}
+				}
+			}
+
+			// hit test for the shape
+			for (int i = 0; i < shapes.size(); ++i) {
+				if (shapes[i]->getSubType() == canvas::Shape::TYPE_BODY) {
+					if (shapes[i]->hit(screenToWorldCoordinates(e->x(), e->y()))) {
+						// start moving
+						mode = MODE_MOVE;
+						operation = boost::shared_ptr<canvas::Operation>(new canvas::MoveOperation(screenToWorldCoordinates(e->x(), e->y())));
+						if (!shapes[i]->isSelected()) {
+							if (!ctrlPressed) {
+								// If CTRL is not pressed, then deselect all other shapes.
+								unselectAll();
+							}
+							shapes[i]->select();
+						}
+						update();
+						return;
+					}
+				}
+			}
+		}
+		else if (mode == MODE_RECTANGLE) {
 			if (!current_shape) {
 				// start drawing a rectangle
+				unselectAll();
 				current_shape = boost::shared_ptr<canvas::Shape>(new canvas::Rectangle(canvas::Shape::TYPE_BODY, screenToWorldCoordinates(e->x(), e->y())));
 				current_shape->startDrawing();
 				setMouseTracking(true);
@@ -478,6 +633,7 @@ void GLWidget3D::mousePressEvent(QMouseEvent *e) {
 		else if (mode == MODE_CIRCLE) {
 			if (!current_shape) {
 				// start drawing a rectangle
+				unselectAll();
 				current_shape = boost::shared_ptr<canvas::Shape>(new canvas::Circle(canvas::Shape::TYPE_BODY, screenToWorldCoordinates(e->x(), e->y())));
 				current_shape->startDrawing();
 				setMouseTracking(true);
@@ -489,6 +645,7 @@ void GLWidget3D::mousePressEvent(QMouseEvent *e) {
 			}
 			else {
 				// start drawing a rectangle
+				unselectAll();
 				current_shape = boost::shared_ptr<canvas::Shape>(new canvas::Polygon(canvas::Shape::TYPE_BODY, screenToWorldCoordinates(e->x(), e->y())));
 				current_shape->startDrawing();
 				setMouseTracking(true);
@@ -505,7 +662,72 @@ void GLWidget3D::mousePressEvent(QMouseEvent *e) {
 */
 
 void GLWidget3D::mouseMoveEvent(QMouseEvent *e) {
-	if (mode == MODE_RECTANGLE || mode == MODE_CIRCLE || mode == MODE_POLYGON) {
+	if (mode == MODE_MOVE) {
+		boost::shared_ptr<canvas::MoveOperation> op = boost::static_pointer_cast<canvas::MoveOperation>(operation);
+		glm::dvec2 dir = screenToWorldCoordinates(e->x(), e->y()) - op->pivot;
+		for (int i = 0; i < shapes.size(); ++i) {
+			if (shapes[i]->isSelected()) {
+				shapes[i]->translate(dir);
+
+				// update 3D geometry
+				QString obj_name = QString("object_%1").arg(i);
+				renderManager.removeObject(obj_name);
+				objects[i] = generateGeometry(shapes[i]);
+				renderManager.addObject(obj_name, "", objects[i], true);
+
+				// update shadow map
+				renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
+			}
+		}
+		op->pivot = screenToWorldCoordinates(e->x(), e->y());
+		update();
+	}
+	else if (mode == MODE_ROTATION) {
+		boost::shared_ptr<canvas::RotateOperation> op = boost::static_pointer_cast<canvas::RotateOperation>(operation);
+		glm::dvec2 dir1 = op->pivot - op->rotation_center;
+		glm::dvec2 dir2 = screenToWorldCoordinates(e->x(), e->y()) - op->rotation_center;
+		double theta = atan2(dir2.y, dir2.x) - atan2(dir1.y, dir1.x);
+		for (int i = 0; i < shapes.size(); ++i) {
+			if (shapes[i]->isSelected()) {
+				shapes[i]->rotate(theta);
+
+				// update 3D geometry
+				QString obj_name = QString("object_%1").arg(i);
+				renderManager.removeObject(obj_name);
+				objects[i] = generateGeometry(shapes[i]);
+				renderManager.addObject(obj_name, "", objects[i], true);
+
+				// update shadow map
+				renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
+			}
+		}
+		op->pivot = screenToWorldCoordinates(e->x(), e->y());
+		update();
+	}
+	else if (mode == MODE_RESIZE) {
+		boost::shared_ptr<canvas::ResizeOperation> op = boost::static_pointer_cast<canvas::ResizeOperation>(operation);
+		glm::dvec2 resize_center = selected_shape->localCoordinate(op->resize_center);
+		glm::dvec2 dir1 = selected_shape->localCoordinate(op->pivot) - resize_center;
+		glm::dvec2 dir2 = selected_shape->localCoordinate(screenToWorldCoordinates(e->x(), e->y())) - resize_center;
+		glm::dvec2 resize_scale(dir2.x / dir1.x, dir2.y / dir1.y);
+		for (int i = 0; i < shapes.size(); ++i) {
+			if (shapes[i]->isSelected()) {
+				shapes[i]->resize(resize_scale, resize_center);
+
+				// update 3D geometry
+				QString obj_name = QString("object_%1").arg(i);
+				renderManager.removeObject(obj_name);
+				objects[i] = generateGeometry(shapes[i]);
+				renderManager.addObject(obj_name, "", objects[i], true);
+
+				// update shadow map
+				renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
+			}
+		}
+		op->pivot = screenToWorldCoordinates(e->x(), e->y());
+		update();
+	}
+	else if (mode == MODE_RECTANGLE || mode == MODE_CIRCLE || mode == MODE_POLYGON) {
 		if (current_shape) {
 			current_shape->updateByNewPoint(current_shape->localCoordinate(screenToWorldCoordinates(e->x(), e->y())), shiftPressed);
 		}
@@ -534,6 +756,10 @@ void GLWidget3D::mouseReleaseEvent(QMouseEvent *e) {
 			camera.xrot = 0;
 			camera.yrot = 0;
 			camera.updateMVPMatrix();
+			front_faced = true;
+		}
+		else {
+			front_faced = false;
 		}
 	}
 
@@ -548,32 +774,18 @@ void GLWidget3D::mouseDoubleClickEvent(QMouseEvent* e) {
 				current_shape->completeDrawing();
 
 				// create 3D geometry
-				std::vector<Vertex> vertices;
-				canvas::BoundingBox bbox = current_shape->boundingBox();
-				glm::vec2 center = current_shape->boundingBox().center();
-				center = current_shape->worldCoordinate(center);
+				std::vector<Vertex> vertices = generateGeometry(current_shape);
+				QString obj_name = QString("object_%1").arg(objects.size());
+				objects.push_back(vertices);
+				renderManager.addObject(obj_name.toUtf8().constData(), "", vertices, true);
 
-				if (mode == MODE_RECTANGLE) {
-					glutils::drawBox(current_shape->boundingBox().width(), current_shape->boundingBox().height(), 10, glm::vec4(0.7, 1, 0.7, 1), glm::translate(glm::mat4(), glm::vec3(center, -5)), vertices);
-				}
-				else if (mode == MODE_CIRCLE) {
-					glutils::drawCylinderZ(current_shape->boundingBox().width() * 0.5, current_shape->boundingBox().height() * 0.5, current_shape->boundingBox().width() * 0.5, current_shape->boundingBox().height() * 0.5, 10, glm::vec4(0.7, 1, 0.7, 1), glm::translate(glm::mat4(), glm::vec3(center, -10)), vertices, 48);
-				}
-				else if (mode == MODE_POLYGON) {
-					std::vector<glm::dvec2> points = current_shape->getPoints();
-					std::vector<glm::vec2> pts(points.size());
-					for (int i = 0; i < pts.size(); i++) {
-						pts[pts.size() - 1 - i] = glm::vec2(points[i].x, points[i].y);
-					}
-					glutils::drawPrism(pts, 10, glm::vec4(0.7, 1, 0.7, 1), glm::translate(glm::mat4(), glm::vec3(0, 0, -10)), vertices);
-				}
-				renderManager.addObject("test", "", vertices, true);
-
+				// update shadow map
 				renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
 
-				//current_shape->select();
 				shapes.push_back(current_shape->clone());
+				shapes.back()->select();
 				current_shape.reset();
+				operation.reset();
 				mode = MODE_SELECT;
 				mainWin->ui.actionSelect->setChecked(true);
 			}

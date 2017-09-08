@@ -3,12 +3,14 @@
 namespace canvas {
 
 	Rectangle::Rectangle(int subtype) : Shape(subtype) {
+		type = TYPE_RECTANGLE;
 		width = 0;
 		height = 0;
 		theta = 0;
 	}
 
 	Rectangle::Rectangle(int subtype, const glm::dvec2& point) : Shape(subtype) {
+		type = TYPE_RECTANGLE;
 		width = 0;
 		height = 0;
 		pos = point;
@@ -19,6 +21,7 @@ namespace canvas {
 	 * Construct a rectangle from the xml dom node.
 	 */
 	Rectangle::Rectangle(int subtype, QDomNode& node) : Shape(subtype) {
+		type = TYPE_RECTANGLE;
 		QDomNode params_node = node.firstChild();
 		while (!params_node.isNull()) {
 			if (params_node.toElement().tagName() == "pose") {

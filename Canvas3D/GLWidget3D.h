@@ -13,6 +13,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "Shape.h"
+#include "Operation.h"
 
 class MainWindow;
 
@@ -38,20 +39,29 @@ public:
 	bool ctrlPressed;
 
 	bool first_paint;
+	bool front_faced;
 
 	QPointF mouse_prev_pt;
 	boost::shared_ptr<canvas::Shape> current_shape;
+	boost::shared_ptr<canvas::Operation> operation;
+	boost::shared_ptr<canvas::Shape> selected_shape;
 	std::vector<boost::shared_ptr<canvas::Shape>> shapes;
+	std::vector<std::vector<Vertex>> objects;
 
 public:
 	GLWidget3D(MainWindow *parent = 0);
 
 	void drawScene();
 	void render();
+	void clear();
+	void selectAll();
+	void unselectAll();
 	void setMode(int mode);
 	glm::dvec2 screenToWorldCoordinates(const glm::dvec2& p);
 	glm::dvec2 screenToWorldCoordinates(double x, double y);
 	glm::dvec2 worldToScreenCoordinates(const glm::dvec2& p);
+	double scale();
+	std::vector<Vertex> generateGeometry(boost::shared_ptr<canvas::Shape> shape);
 
 	void keyPressEvent(QKeyEvent* e);
 	void keyReleaseEvent(QKeyEvent* e);

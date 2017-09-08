@@ -3,11 +3,13 @@
 namespace canvas {
 
 	Circle::Circle(int subtype) : Shape(subtype) {
+		type = TYPE_CIRCLE;
 		width = 0;
 		height = 0;
 	}
 
 	Circle::Circle(int subtype, const glm::dvec2& point) : Shape(subtype) {
+		type = TYPE_CIRCLE;
 		width = 0;
 		height = 0;
 		pos = point;
@@ -18,6 +20,7 @@ namespace canvas {
 	* Construct a rectangle from the xml dom node.
 	*/
 	Circle::Circle(int subtype, QDomNode& node) : Shape(subtype) {
+		type = TYPE_CIRCLE;
 		QDomNode params_node = node.firstChild();
 		while (!params_node.isNull()) {
 			if (params_node.toElement().tagName() == "pose") {

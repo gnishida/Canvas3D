@@ -13,10 +13,12 @@ namespace canvas {
 
 	class Shape {
 	public:
+		static enum { TYPE_RECTANGLE = 0, TYPE_CIRCLE, TYPE_POLYGON };
 		static enum { TYPE_BODY = 0, TYPE_LINKAGE_REGION };
 		static enum { RESIZE_TOP_LEFT = 0, RESIZE_TOP_RIGHT, RESIZE_BOTTOM_LEFT, RESIZE_BOTTOM_RIGHT };
 
 	protected:
+		int type;
 		int subtype;
 		bool selected;
 		bool currently_drawing;
@@ -29,6 +31,7 @@ namespace canvas {
 		Shape(int subtype);
 		~Shape();
 
+		int getType() { return type; }
 		int getSubType() { return subtype; }
 		virtual boost::shared_ptr<Shape> clone() const = 0;
 		virtual void draw(QPainter& painter, const QPointF& origin, double scale) const = 0;
