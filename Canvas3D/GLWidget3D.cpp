@@ -448,11 +448,12 @@ glm::dvec2 GLWidget3D::screenToWorldCoordinates(const glm::dvec2& p) {
 
 glm::dvec2 GLWidget3D::screenToWorldCoordinates(double x, double y) {
 	glm::vec2 offset = glm::vec2(camera.pos.x, -camera.pos.y) * (float)scale();
-	return glm::dvec2((x - width() * 0.5 + offset.x) / width() * 2 / camera.f() * camera.pos.z, -(y - height() * 0.5 + offset.y) / scale());
+	return glm::dvec2((x - width() * 0.5 + offset.x) / scale(), -(y - height() * 0.5 + offset.y) / scale());
 }
 
 glm::dvec2 GLWidget3D::worldToScreenCoordinates(const glm::dvec2& p) {
-	return glm::dvec2(width() * 0.5 + p.x * camera.f() / camera.pos.z * width() * 0.5, height() * 0.5 - p.y * scale());
+	//return glm::dvec2(width() * 0.5 + p.x * camera.f() / camera.pos.z * width() * 0.5, height() * 0.5 - p.y * scale());
+	return glm::dvec2(width() * 0.5 + (p.x - camera.pos.x) * scale(), height() * 0.5 - (p.y - camera.pos.y) * scale());
 }
 
 double GLWidget3D::scale() {
@@ -597,9 +598,11 @@ void GLWidget3D::paintEvent(QPaintEvent *event) {
 		// draw grid
 		painter.save();
 		painter.setPen(QPen(QColor(224, 224, 224), 1));
-		for (int i = -2000; i <= 2000; i++) {
-			painter.drawLine(i * 5 * 10, -10000 * 10 , i * 5 * 10, 10000 * 10);
-			painter.drawLine(-10000 * 10, i * 5 * 10, 10000 * 10, i * 5 * 10);
+		for (int i = -200; i <= 200; i++) {
+			glm::dvec2 p = worldToScreenCoordinates(glm::dvec2(i * 5, i * 5));
+			painter.drawLine(p.x, 0, p.x, height());
+			glm::dvec2 p2 = worldToScreenCoordinates(glm::dvec2(0, i * 5));
+			painter.drawLine(0, p.y, width(), p.y);
 		}
 		painter.restore();
 
