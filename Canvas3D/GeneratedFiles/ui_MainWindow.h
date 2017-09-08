@@ -31,6 +31,7 @@ public:
     QAction *actionRectangle;
     QAction *actionCircle;
     QAction *actionPolygon;
+    QAction *actionNew;
     QWidget *centralWidget;
     QMenuBar *menuBar;
     QMenu *menuFile;
@@ -57,6 +58,8 @@ public:
         actionPolygon = new QAction(MainWindowClass);
         actionPolygon->setObjectName(QStringLiteral("actionPolygon"));
         actionPolygon->setCheckable(true);
+        actionNew = new QAction(MainWindowClass);
+        actionNew->setObjectName(QStringLiteral("actionNew"));
         centralWidget = new QWidget(MainWindowClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         MainWindowClass->setCentralWidget(centralWidget);
@@ -77,6 +80,8 @@ public:
 
         menuBar->addAction(menuFile->menuAction());
         menuBar->addAction(menuMode->menuAction());
+        menuFile->addAction(actionNew);
+        menuFile->addSeparator();
         menuFile->addAction(actionExit);
         menuMode->addAction(actionSelect);
         menuMode->addAction(actionRectangle);
@@ -96,6 +101,8 @@ public:
         actionRectangle->setText(QApplication::translate("MainWindowClass", "Rectangle", 0));
         actionCircle->setText(QApplication::translate("MainWindowClass", "Circle", 0));
         actionPolygon->setText(QApplication::translate("MainWindowClass", "Polygon", 0));
+        actionNew->setText(QApplication::translate("MainWindowClass", "New", 0));
+        actionNew->setShortcut(QApplication::translate("MainWindowClass", "Ctrl+N", 0));
         menuFile->setTitle(QApplication::translate("MainWindowClass", "File", 0));
         menuMode->setTitle(QApplication::translate("MainWindowClass", "Mode", 0));
     } // retranslateUi

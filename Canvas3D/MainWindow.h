@@ -21,6 +21,7 @@ protected:
 	void keyReleaseEvent(QKeyEvent* e);
 
 public slots:
+	void onNew();
 	void onModeChanged();
 };
 

@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 	groupMode->addAction(ui.actionPolygon);
 	ui.actionSelect->setChecked(true);
 
+	connect(ui.actionNew, SIGNAL(triggered()), this, SLOT(onNew()));
 	connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 	connect(ui.actionSelect, SIGNAL(triggered()), this, SLOT(onModeChanged()));
 	connect(ui.actionRectangle, SIGNAL(triggered()), this, SLOT(onModeChanged()));
@@ -21,6 +22,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 }
 
 MainWindow::~MainWindow() {
+}
+
+void MainWindow::onNew() {
+	glWidget->clear();
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *e) {

@@ -295,7 +295,15 @@ void GLWidget3D::render() {
 }
 
 void GLWidget3D::clear() {
+	shapes.clear();
+	objects.clear();
 	selected_shape.reset();
+
+	// clear 3D geometry
+	renderManager.removeObjects();
+
+	// update shadow map
+	renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
 
 	update();
 }
@@ -620,6 +628,8 @@ void GLWidget3D::mousePressEvent(QMouseEvent *e) {
 					}
 				}
 			}
+
+			unselectAll();
 		}
 		else if (mode == MODE_RECTANGLE) {
 			if (!current_shape) {

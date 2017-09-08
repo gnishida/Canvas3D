@@ -991,12 +991,12 @@ void drawCylinderZ(float radius1, float radius2, float radius3, float radius4, f
 
 void drawPrism(const std::vector<glm::vec2>& points, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices) {
 	// top face
-	drawPolygon(points, color, glm::translate(mat, glm::vec3(0, 0, h)), vertices);
+	drawConcavePolygon(points, color, glm::translate(mat, glm::vec3(0, 0, h)), vertices);
 
 	// bottom face
 	std::vector<glm::vec2> reversed_points = points;
 	std::reverse(reversed_points.begin(), reversed_points.end());
-	drawPolygon(reversed_points, color, mat, vertices);
+	drawConcavePolygon(reversed_points, color, mat, vertices);
 
 	// side faces
 	for (int i = 0; i < points.size(); i++) {
