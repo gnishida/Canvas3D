@@ -46,6 +46,8 @@ namespace canvas {
 
 			params_node = params_node.nextSibling();
 		}
+
+		update3DGeometry();
 	}
 
 	Polygon::~Polygon() {
@@ -180,6 +182,8 @@ namespace canvas {
 
 		glm::dvec2 offset2(offset.x * cos(theta) - offset.y * sin(theta), offset.x * sin(theta) + offset.y * cos(theta));
 		pos += offset2;
+
+		update3DGeometry();
 	}
 
 	BoundingBox Polygon::boundingBox() const {

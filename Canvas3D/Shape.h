@@ -8,6 +8,7 @@
 #include <QImage>
 #include <boost/shared_ptr.hpp>
 #include "BoundingBox.h"
+#include "Vertex.h"
 
 namespace canvas {
 
@@ -24,6 +25,7 @@ namespace canvas {
 		bool currently_drawing;
 		glm::dvec2 pos;
 		double theta;
+		std::vector<Vertex> vertices;
 		static QImage rotation_marker;
 		static std::vector<QBrush> brushes;
 
@@ -45,6 +47,8 @@ namespace canvas {
 		bool isSelected() const;
 		void startDrawing();
 		void completeDrawing();
+		std::vector<Vertex>& getVertices() { return vertices; }
+		std::vector<Vertex> getVertices() const { return vertices; }
 		virtual bool hit(const glm::dvec2& point) const = 0;
 		void translate(const glm::dvec2& vec);
 		virtual void resize(const glm::dvec2& scale, const glm::dvec2& resize_center) = 0;
@@ -54,6 +58,7 @@ namespace canvas {
 		glm::dvec2 getRotationMarkerPosition(double scale) const;
 		glm::dvec2 localCoordinate(const glm::dvec2& point) const; 
 		glm::dvec2 worldCoordinate(const glm::dvec2& point) const;
+		void update3DGeometry();
 	};
 
 }

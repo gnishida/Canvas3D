@@ -160,6 +160,8 @@
     </ClCompile>
     <ClCompile Include="GLUtils.cpp" />
     <ClCompile Include="GLWidget3D.cpp" />
+    <ClCompile Include="History.cpp" />
+    <ClCompile Include="Layer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="Operation.cpp" />
@@ -218,6 +220,8 @@
     <ClInclude Include="GeneratedFiles\ui_MainWindow.h" />
     <ClInclude Include="GLUtils.h" />
     <ClInclude Include="GLWidget3D.h" />
+    <ClInclude Include="History.h" />
+    <ClInclude Include="Layer.h" />
     <ClInclude Include="Operation.h" />
     <ClInclude Include="Polygon.h" />
     <ClInclude Include="Rectangle.h" />

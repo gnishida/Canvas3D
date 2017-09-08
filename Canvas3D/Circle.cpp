@@ -35,6 +35,8 @@ namespace canvas {
 
 			params_node = params_node.nextSibling();
 		}
+
+		update3DGeometry();
 	}
 
 	Circle::~Circle() {
@@ -157,6 +159,8 @@ namespace canvas {
 
 		width *= scale.x;
 		height *= scale.y;
+
+		update3DGeometry();
 	}
 
 	BoundingBox Circle::boundingBox() const {

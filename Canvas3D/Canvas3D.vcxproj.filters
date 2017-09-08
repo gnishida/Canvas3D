@@ -86,6 +86,12 @@
     <ClCompile Include="Operation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="History.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Layer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="MainWindow.h">
@@ -139,6 +145,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Operation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="History.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Layer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

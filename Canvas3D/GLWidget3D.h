@@ -14,6 +14,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include "Shape.h"
 #include "Operation.h"
+#include "Layer.h"
+#include "History.h"
 
 class MainWindow;
 
@@ -45,8 +47,11 @@ public:
 	boost::shared_ptr<canvas::Shape> current_shape;
 	boost::shared_ptr<canvas::Operation> operation;
 	boost::shared_ptr<canvas::Shape> selected_shape;
-	std::vector<boost::shared_ptr<canvas::Shape>> shapes;
-	std::vector<std::vector<Vertex>> objects;
+	std::vector<boost::shared_ptr<canvas::Shape>> copied_shapes;
+	canvas::Layer layer;
+	canvas::History history;
+	//std::vector<boost::shared_ptr<canvas::Shape>> shapes;
+	//std::vector<std::vector<Vertex>> objects;
 
 public:
 	GLWidget3D(MainWindow *parent = 0);
@@ -56,12 +61,19 @@ public:
 	void clear();
 	void selectAll();
 	void unselectAll();
+	void deleteSelectedShapes();
+	void undo();
+	void redo();
+	void copySelectedShapes();
+	void pasteCopiedShapes();
 	void setMode(int mode);
+	void open(const QString& filename);
+	void save(const QString& filename);
 	glm::dvec2 screenToWorldCoordinates(const glm::dvec2& p);
 	glm::dvec2 screenToWorldCoordinates(double x, double y);
 	glm::dvec2 worldToScreenCoordinates(const glm::dvec2& p);
 	double scale();
-	std::vector<Vertex> generateGeometry(boost::shared_ptr<canvas::Shape> shape);
+	void update3DGeometry();
 
 	void keyPressEvent(QKeyEvent* e);
 	void keyReleaseEvent(QKeyEvent* e);

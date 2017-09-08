@@ -989,7 +989,17 @@ void drawCylinderZ(float radius1, float radius2, float radius3, float radius4, f
 	}
 }
 
-void drawPrism(const std::vector<glm::vec2>& points, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices) {
+void drawPrism(std::vector<glm::vec2> points, float h, const glm::vec4& color, const glm::mat4& mat, std::vector<Vertex>& vertices) {
+	// make the order of points counter clock wise order
+	double a = 0.0;
+	for (int i = 0; i < points.size(); i++) {
+		int next = (i + 1) % points.size();
+		a += (points[next].x - points[i].x) * (points[next].y + points[i].y);
+	}
+	if (a > 0) {
+		std::reverse(points.begin(), points.end());
+	}
+
 	// top face
 	drawConcavePolygon(points, color, glm::translate(mat, glm::vec3(0, 0, h)), vertices);
 

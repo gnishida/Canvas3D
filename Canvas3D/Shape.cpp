@@ -1,5 +1,15 @@
 #include "Shape.h"
 #include <QImage>
+#include "GLUtils.h"
+#include <boost/geometry.hpp>
+#include <boost/geometry/core/point_type.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/geometries.hpp>
+#include <boost/geometry/geometries/register/ring.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/register/ring.hpp>
+#include <boost/geometry/algorithms/within.hpp>
+#include <boost/geometry/geometries/register/ring.hpp>
 
 namespace canvas {
 
@@ -40,10 +50,14 @@ namespace canvas {
 
 	void Shape::completeDrawing() {
 		currently_drawing = false;
+
+		update3DGeometry();
 	}
 
 	void Shape::translate(const glm::dvec2& vec) {
 		pos += vec;
+
+		update3DGeometry();
 	}
 
 	void Shape::rotate(double angle) {
@@ -54,6 +68,8 @@ namespace canvas {
 		pos.y += -c2.x * sin(angle) + c2.y * (1.0 - cos(angle));
 
 		theta += angle;
+
+		update3DGeometry();
 	}
 
 	glm::dvec2 Shape::getCenter() const {
@@ -72,5 +88,16 @@ namespace canvas {
 
 	glm::dvec2 Shape::worldCoordinate(const glm::dvec2& point) const {
 		return glm::dvec2(point.x * cos(theta) - point.y * sin(theta) + pos.x, point.x * sin(theta) + point.y * cos(theta) + pos.y);
+	}
+
+	void Shape::update3DGeometry() {
+		vertices.clear();
+
+		std::vector<glm::dvec2> points = getPoints();
+		std::vector<glm::vec2> pts(points.size());
+		for (int i = 0; i < pts.size(); i++) {
+			pts[i] = glm::vec2(points[i].x, points[i].y);
+		}
+		glutils::drawPrism(pts, 10, glm::vec4(0.7, 1, 0.7, 1), glm::translate(glm::mat4(), glm::vec3(0, 0, -10)), vertices);
 	}
 }

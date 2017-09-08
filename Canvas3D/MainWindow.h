@@ -22,6 +22,14 @@ protected:
 
 public slots:
 	void onNew();
+	void onOpen();
+	void onSave();
+	void onUndo();
+	void onRedo();
+	void onCopy();
+	void onPaste();
+	void onDelete();
+	void onSelectAll();
 	void onModeChanged();
 };
 
