@@ -399,6 +399,7 @@ void GLWidget3D::open(const QString& filename) {
 	if (root.tagName() != "design")	throw "Invalid file format.";
 
 	// clear the data
+	layer.clear();
 	selected_shape.reset();
 	mode = MODE_SELECT;
 
@@ -880,15 +881,11 @@ void GLWidget3D::mouseDoubleClickEvent(QMouseEvent* e) {
 			if (current_shape) {
 				// The shape is created.
 				current_shape->completeDrawing();
-
-				// create 3D geometry
-				QString obj_name = QString("object_%1").arg(layer.shapes.size());
-				renderManager.addObject(obj_name.toUtf8().constData(), "", current_shape->getVertices(), true);
-
-				// update shadow map
-				renderManager.updateShadowMap(this, light_dir, light_mvpMatrix);
-
 				layer.shapes.push_back(current_shape->clone());
+
+				// update 3D geometry
+				update3DGeometry();
+
 				layer.shapes.back()->select();
 				mode = MODE_SELECT;
 				history.push(layer);

@@ -43,15 +43,12 @@ public:
 	bool first_paint;
 	bool front_faced;
 
-	QPointF mouse_prev_pt;
 	boost::shared_ptr<canvas::Shape> current_shape;
 	boost::shared_ptr<canvas::Operation> operation;
 	boost::shared_ptr<canvas::Shape> selected_shape;
 	std::vector<boost::shared_ptr<canvas::Shape>> copied_shapes;
 	canvas::Layer layer;
 	canvas::History history;
-	//std::vector<boost::shared_ptr<canvas::Shape>> shapes;
-	//std::vector<std::vector<Vertex>> objects;
 
 public:
 	GLWidget3D(MainWindow *parent = 0);
